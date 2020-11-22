@@ -98,6 +98,19 @@ def input_type_check(str_input_path):
     else :
         sys.exit('Error invalid File or folder for input')
 
+
+#check if the type is valid
+def Comic_or_Manga(input_arg):
+    str_type = str(input_arg).upper()[0]
+
+    if str_type is 'M':
+        return 'Manga'
+    elif str_type is 'C':
+        return 'Comic'
+    else:
+        sys.exit("Error invalid type")
+
+
 ###     Image processsing
 
 #detect panels in a image
@@ -153,25 +166,42 @@ def middle_location(input_coords = []):
     y_pos = ( (input_coords[1] + input_coords[3]) // 2 )
     return [x_pos, y_pos]
 
-#map a 2D point into a 1D line
-def sorting_funct_manga(cords = []):
-    middle_coords = middle_location(cords)
+#map a 2D point into a 1D line (right and top priority)
+def sorting_funct_manga(coords = []):
+    middle_coords = middle_location(coords)
     x_coord = middle_coords[0] * -31
     y_coord = middle_coords[1] * 3
     return x_coord + y_coord
+
+#map a 2D point into a 1D line (left and top priority)
+def sorting_funct_comic(coords = []):
+    middle_coords = middle_location(coords)
+    x_coord = middle_coords[0] * 3
+    y_coord = middle_coords[1] * 31
+    return x_coord + y_coord
+
+#toggle sorting function for the panels
+def sort_function(input_coord = []):
+    str_type = current_type[0]
+    if str_type is 'M':
+        return sorting_funct_manga(input_coord)
+    elif str_type is 'C':
+        return sorting_funct_comic(input_coord)
+    else:
+        sys.exit("Error How did you got here ???")
 
 
 #write the output into a file!
 def write_to_file(str_folderpath, str_filename, cv2_img, list_panels = []):
     filename = pathlib.PurePath(str_filename).stem  #get the filename
     counter = 0
-    for panel in list_panels:
+    for panel_coords in list_panels:
         counter = counter + 1
         
         #crop the image using cv2 array slicing
         cropped_img = cv2_img[ 
-            panel[1] : panel[3],
-            panel[0] : panel[2]
+            panel_coords[1] : panel_coords[3],
+            panel_coords[0] : panel_coords[2]
         ]
 
         #make a filename and generate the full path and then write it!
@@ -187,7 +217,7 @@ if __name__ == "__main__":
 
     fof_input = args.input_source
     output_foler = output_folder_check(args.output_folder)
-    current_type = args.current_type
+    current_type = Comic_or_Manga(args.current_type)
 
     print("Input  : ", fof_input, input_type_check(fof_input))
     print("Output : ", output_foler)
@@ -202,9 +232,9 @@ if __name__ == "__main__":
     for img_file in files_or_folders:
         print('File : ', img_file)
 
-        img_source = cv2.imread(img_file)           #load the image from file
-        panels = panel_detector(img_source)         #get the panels
-        panels.sort(key = sorting_funct_manga)      #sort the panels
+        img_source = cv2.imread(img_file)   #load the image from file
+        panels = panel_detector(img_source) #get the panels
+        panels.sort(key = sort_function)    #sort the panels
 
         print('Detected Panels : ', len(panels) )
 
